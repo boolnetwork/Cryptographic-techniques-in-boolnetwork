@@ -1,0 +1,106 @@
+\documentclass[12pt]{report}
+\usepackage{amssymb,latexsym,amsmath} 
+\usepackage{geometry} \geometry{margin=3cm}
+\usepackage{bm}
+\usepackage{amsthm} 
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{authblk}
+\usepackage{hyperref}
+\usepackage{arydshln}
+\usepackage{enumitem}
+\usepackage{graphicx}
+\usepackage{multirow}
+\usepackage{hyperref}
+\usepackage{tikz}
+\usepackage[inline,draft, nomargin]{fixme}
+
+\usepackage{mdframed}
+
+\usepackage{xspace}
+\usepackage{pifont}
+\usepackage{rotating}
+
+% Title Page
+\title{MuLtiSignature and Threshold Signature}
+\author{Li Kang}
+
+
+\begin{document}
+
+\section{BLS signature}
+
+\subsection{BLS Scheme}
+\begin{enumerate}
+	\item{Params}: e: $G_{0} \times G_{1} \rightarrow G_{T}$, $g_0,g_1$ are generators, hash function $H_0:$ $M \rightarrow G_0$ 
+	\item{KegGen}: choose a random $\alpha$ from $Z_{q}$ as secret key $sk$, set h $\leftarrow$ $g_{1}^\alpha$ as the corresponding public key $pk$.
+	\item{Sign($sk,m$)}: compute signature as $\sigma \leftarrow H_{0}(m)^\alpha \in G_{0}$
+	\item{Verify($pk,m,\sigma$)}: check if the following equation holds: $e(g_{1},\sigma) =e(pk, H_{0}(m))$
+\end{enumerate}
+Pros of BLS signature: Short, Aggregation, Multi-signature.
+
+\subsection{Signature Aggregation and Public Key Aggregation}
+If multiple signers sign on the same message $m$, all the public keys can be aggregated into one public key, which is used for verification.
+\begin{enumerate}
+	\item{Params:} Given $(pk_{i}, m, \sigma_{i})$ for $i \in (1,2,3...n)$
+	\item{Signature Aggregation:} Compute aggregated signature as $\sigma \leftarrow \sigma_{1}\cdot\sigma_{2}\cdot\sigma_{3}\cdots\sigma_{n}=H_{0}(m)^{(\alpha_{1}+\alpha_{2}+...+\alpha_{n})}$
+	\item{Public Key Aggregation:} Compute aggregated public key as $apk=pk_{1} \cdot pk_{2} \cdots pk_{n}= g_{1}^{(\alpha_{1}+\alpha_{2}+...+\alpha_{n})}$
+	\item{Verify:}On receiving $(apk,\sigma,m)$, verify the aggregated signature by checking the following equation $: e(g_{1},\sigma)= e(apk,H_{0}(m))$. 
+	
+	This means the aggregated public key can be computed before knowing the message and there is no need to provide the verifier with the individual public key to verify the aggregated signature.
+\end{enumerate}
+
+\begin{itemize}
+	\item{Public Key Attack:} An attacker chooses a random number $\beta \leftarrow Z_{q}$, then cumputes a public key as $pk_{attacker}=g_{1}^{\beta}\cdot (pk_{Bob})^{-1}$, where $pk_{Bob}$ is a public key of a suer Bob. Then the attacker can generate the aggregated signature as $\sigma^{'}=H_{0}(m)^{\beta}$, and claim that this is the aggregated signature signed by him and Bob. The signature can be verified using the aggretaed public key $apk^{'}=pk_{attacker} \cdot pk_{Bob}=g_{1}^\beta$, by checking the following equation $e(\sigma^{'}, g_{1})=e(apk^c{'},H_{0}(m))$. 
+\end{itemize}
+
+\subsection{Modified BLS Aggregated Signature}
+In order to resist public key attack, we use a modified BLS signature. The only modified part is the aggregation part.
+\begin{enumerate}
+	\item{Params:} One more hash function $H_{1}$ is needed, the others are the same
+	\item{KeyGen:} Secret key $sk_{i}=\alpha_{i}\leftarrow Z_{q}, pk_{i}=g_{1}^{\alpha_{i}}$
+	\item{Sign:} $\sigma_{i} \leftarrow H_{0}(m)^{\alpha_{i}} \in G_{0}$
+	\item{Signature Aggregation:} Firstly, compute $t_{i}=H_{1}(pk_{i})$ for $i=1,2...,n$, then aggregation signatures as $\sigma=\sigma_{1}^{t_1} \cdot \sigma_{2}^{t_2} \cdots \sigma_{n}^{t_n} \in G_{0}$
+	\item{Public Key Aggregation:} $apk=pk_{1}^{t_1} \cdot pk_{2}^{t_2} \cdots pk_{n}^{t_n} \in G_{1}$
+	\item{Verify:} On input ($apk,\sigma, m$), veryfy the aggregated signature by verifying the following equation $e(\sigma, g_{1})=e(apk,H_{0}(m))$
+\end{enumerate}
+Normally, all signers sign on the same message, so only two pairing operations are needed to verify the signature.
+
+\subsection{Batch Verification}
+On input multiple pairs of ($m_{i},apk_{i},\sigma_{i}$) for $i=1,2,...b$, where $apk_{i}$ is the aggregated public key for the aggregated signature $\sigma_{i}$ on message $m_{i}$, the verifier checks the signatures as follows:
+\begin{enumerate}
+	\item Aggregate signatures as $\sigma^{'}=\sigma_{1} \cdot \sigma_{2} \cdots \sigma_{b} \in G_{0}$;
+	\item check the equation: $e(g_{1}, \sigma^{'})=e(apk_{1},H_{0}(m_{1}))\cdot e(apk_{2}, H_{0}(m_{2})) \cdots e(apk_{b}, H_{0}(m_{b}))$
+\end{enumerate}
+
+\subsection{From n-out-of-n to t-out-of-n}
+MultiSignature always require n-out-of-n to sign the message. In many cases, we need more flexible policies, such as t-out-of-n. Typically, threshold wallet have addr=$H(pk_{1},...,pk_{n}, t)$, need to reveal $n$ keys and $t$ signatures.
+\subsubsection{Accountable Subgroup Multi-signature (ASM)}
+
+
+\section{Threshold Signature Overview}
+Digital signature is the critical component that is used to ensure the validity of a cryptocurrency transaction. Basically, the transaction sender authorizes a transaction by generating a signature on the transaction using the private key and the signature can be verified using the corresponding public key to ensure that the transaction is indeed from a party that owns the corresponding private key and the transaction has not been modified during transmission. The most commonly used signature scheme in cryptocurrency is ECDSA, which is used in Bitcoin and other cryptocurrencies. 
+
+In cryptocurrency space, anyone who controls the private key controls the money. For the ECDSA signature scheme, only one party who controls the one private key has the ability the generate valid transactions of the cryptocurrency.
+However, traditional ECDSA signature used in cryptocurrencies suffers from a drawback that  
+
+  
+A threshold signature scheme (TSS) is a cryptographic technique that allows multiple parties to generate a single signature in the distributed manner, which can be verified using a single public key.
+
+
+
+Threshold signature is a method to replace the KeyGen and Sign algorithm of a digital signature scheme with a interactive protocol among multiple parties. The verification algorithm remains unchanged. The only difference with a standard signature scheme is that the generation is performed by multiple parties interactively. In the KeyGen phase of a threshold signature scheme, n parties interactively generate an m-out-of-n secret sharing of the key. \textbf{This seems to be standard secret sharing, such as Shamir secret sharing. In a secret sharing scheme, the key is generated locally and then sharing it amongest the parties. However, in a threshold siganture scheme, the key is generated in a shared manner.}
+
+
+
+
+
+
+
+
+Threshold signature does not enforce accountability, meaning that a t-out-of-n threshold signature does not tell the verifier which t of the n signers created the signature. However, a multisignature enforces accountability, which means that the verifier knows which t signers created the signature.
+
+However, multisignature have several drawbacks. The first drawback is that multisignature is not flexible in terms of its policy. For instance, once we define a policy, which requires t out of n users to sign the transaction, if one or several parties lose connections and cannot generate the signatures, then such a multisignature will not be generated successfully. Another problem is that if a new party joins or leaves the group, the access structure should be changed, which means the public address of the fund should be changed. Moreover, the exact access policy is public on the blockchain, which undermines the privacy of the group.
+
+Both threshold signature and multisignature aim to achieve the same function that t out of n members are required to generate a valid signature. However threshold signature have several advantages over multisignature. 
+\end{document}
